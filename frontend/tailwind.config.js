@@ -33,20 +33,16 @@ export default {
         background: {
           DEFAULT: 'var(--color-background)',
         },
+        card: {
+          DEFAULT: 'var(--color-card)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-family)', 'system-ui', 'sans-serif'],
       },
-      borderRadius: {
-        'sm': 'var(--border-radius-sm)',
-        'md': 'var(--border-radius-md)',
-        'lg': 'var(--border-radius-lg)',
-        'xl': 'var(--border-radius-xl)',
-      },
-      boxShadow: {
-        'sm': 'var(--shadow-sm)',
-        'md': 'var(--shadow-md)',
-        'lg': 'var(--shadow-lg)',
+      textColor: {
+        'heading': 'var(--color-text-primary)',
+        'body': 'var(--color-text-secondary)',
       },
     },
   },
