@@ -86,6 +86,22 @@ class GuestResponse(IDSchema):
     total_spent: int
     last_visit: Optional[date] = None
 
+    # Document fields
+    id_document_front_url: Optional[str] = None
+    id_document_back_url: Optional[str] = None
+    document_clarity_status: Optional[str] = None
+    document_clarity_notes: Optional[str] = None
+
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
+
+
+class DocumentUploadResponse(BaseSchema):
+    """Schema for document upload response."""
+
+    file_url: str
+    side: str  # front or back
+    clarity_status: str  # clear, unclear, pending
+    clarity_notes: str
+    guest_id: int

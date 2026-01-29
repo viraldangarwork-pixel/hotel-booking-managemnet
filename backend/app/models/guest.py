@@ -25,6 +25,12 @@ class Guest(BaseModel):
     id_number = Column(String(100), nullable=True)
     nationality = Column(String(100), nullable=True)
 
+    # Identity Document Images
+    id_document_front_url = Column(String(500), nullable=True)
+    id_document_back_url = Column(String(500), nullable=True)
+    document_clarity_status = Column(String(20), nullable=True)  # clear, unclear, pending
+    document_clarity_notes = Column(Text, nullable=True)
+
     # Address
     address = Column(Text, nullable=True)
     city = Column(String(100), nullable=True)

@@ -34,6 +34,9 @@ twilio==8.11.0
 openai==1.10.0
 langchain==0.1.4
 
+# Image Processing
+Pillow==10.2.0
+
 # Utilities
 python-dotenv==1.0.0
 python-dateutil==2.8.2

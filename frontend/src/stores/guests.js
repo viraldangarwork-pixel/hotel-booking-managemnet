@@ -100,11 +100,50 @@ export const useGuestsStore = defineStore('guests', () => {
       if (index !== -1) {
         guests.value[index] = response.data
       }
+      if (currentGuest.value?.id === guestId) {
+        currentGuest.value = response.data
+      }
       return { success: true, data: response.data }
     } catch (err) {
       return {
         success: false,
         error: err.response?.data?.detail || 'Failed to update VIP status'
+      }
+    }
+  }
+
+  async function uploadDocument(guestId, file, side = 'front', documentType = '') {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('side', side)
+      formData.append('document_type', documentType)
+
+      const response = await api.post(`/guests/${guestId}/upload-document`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      // Refresh guest data after upload
+      await fetchGuest(guestId)
+
+      return { success: true, data: response.data }
+    } catch (err) {
+      return {
+        success: false,
+        error: err.response?.data?.detail || 'Failed to upload document'
+      }
+    }
+  }
+
+  async function deleteGuest(guestId) {
+    try {
+      await api.delete(`/guests/${guestId}`)
+      guests.value = guests.value.filter(g => g.id !== guestId)
+      return { success: true }
+    } catch (err) {
+      return {
+        success: false,
+        error: err.response?.data?.detail || 'Failed to delete guest'
       }
     }
   }
@@ -120,6 +159,8 @@ export const useGuestsStore = defineStore('guests', () => {
     createGuest,
     findOrCreateGuest,
     updateGuest,
-    toggleVIP
+    toggleVIP,
+    uploadDocument,
+    deleteGuest
   }
 })

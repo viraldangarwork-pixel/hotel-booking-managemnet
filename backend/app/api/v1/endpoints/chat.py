@@ -1,15 +1,18 @@
 """Chat endpoints for WhatsApp and AI."""
 
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.config import settings
 from app.models.user import User
 from app.models.guest import Guest
+from app.models.room import Room, RoomStatus
+from app.models.booking import Booking, BookingStatus
 from app.models.chat import (
     WhatsAppChat,
     WhatsAppMessage,
@@ -216,6 +219,216 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "received"}
 
 
+# ============ Data Summary for Chat Panel ============
+
+@router.get("/ai/data-summary")
+def get_data_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get hotel data summary for the chat panel."""
+    today = date.today()
+
+    # Room stats
+    total_rooms = db.query(func.count(Room.id)).scalar() or 0
+    available_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.AVAILABLE).scalar() or 0
+    occupied_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.CHECKED_IN).scalar() or 0
+    booked_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.BOOKED).scalar() or 0
+    maintenance_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.MAINTENANCE).scalar() or 0
+
+    # Today's check-ins/check-outs
+    todays_checkins = db.query(Booking).filter(
+        Booking.check_in_date == today,
+        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+    ).all()
+
+    todays_checkouts = db.query(Booking).filter(
+        Booking.check_out_date == today,
+        Booking.status == BookingStatus.CHECKED_IN,
+    ).all()
+
+    # Load guest info for today's bookings
+    checkin_list = []
+    for b in todays_checkins:
+        guest = db.query(Guest).filter(Guest.id == b.guest_id).first()
+        room = db.query(Room).filter(Room.id == b.room_id).first()
+        checkin_list.append({
+            "booking_ref": b.booking_ref,
+            "guest_name": f"{guest.first_name} {guest.last_name}" if guest else "Unknown",
+            "room_number": room.room_number if room else "N/A",
+            "status": b.status.value if b.status else "pending",
+        })
+
+    checkout_list = []
+    for b in todays_checkouts:
+        guest = db.query(Guest).filter(Guest.id == b.guest_id).first()
+        room = db.query(Room).filter(Room.id == b.room_id).first()
+        checkout_list.append({
+            "booking_ref": b.booking_ref,
+            "guest_name": f"{guest.first_name} {guest.last_name}" if guest else "Unknown",
+            "room_number": room.room_number if room else "N/A",
+            "actual_check_in": b.actual_check_in.isoformat() if b.actual_check_in else None,
+        })
+
+    # Guest stats
+    total_guests = db.query(func.count(Guest.id)).scalar() or 0
+    vip_guests = db.query(func.count(Guest.id)).filter(Guest.is_vip == True).scalar() or 0
+
+    # Active bookings
+    active_bookings = db.query(func.count(Booking.id)).filter(
+        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING, BookingStatus.CHECKED_IN])
+    ).scalar() or 0
+
+    return {
+        "rooms": {
+            "total": total_rooms,
+            "available": available_rooms,
+            "occupied": occupied_rooms,
+            "booked": booked_rooms,
+            "maintenance": maintenance_rooms,
+        },
+        "today": {
+            "check_ins": checkin_list,
+            "check_outs": checkout_list,
+            "check_in_count": len(checkin_list),
+            "check_out_count": len(checkout_list),
+        },
+        "guests": {
+            "total": total_guests,
+            "vip": vip_guests,
+        },
+        "bookings": {
+            "active": active_bookings,
+        },
+    }
+
+
+def _generate_smart_response(content: str, db: Session) -> str:
+    """Generate a context-aware response by querying the database."""
+    lower = content.lower().strip()
+    today = date.today()
+
+    # Room availability query
+    if any(kw in lower for kw in ["room", "available", "availability", "vacant", "free room"]):
+        available = db.query(Room).filter(Room.status == RoomStatus.AVAILABLE).all()
+        if available:
+            room_list = ", ".join([f"Room {r.room_number} (Floor {r.floor})" for r in available[:10]])
+            return f"There are {len(available)} available rooms: {room_list}."
+        return "No rooms are currently available."
+
+    # Today's check-ins
+    if any(kw in lower for kw in ["today check-in", "today's check-in", "checkin today", "check in today", "arriving today"]):
+        checkins = db.query(Booking).filter(
+            Booking.check_in_date == today,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        ).all()
+        if checkins:
+            lines = []
+            for b in checkins:
+                guest = db.query(Guest).filter(Guest.id == b.guest_id).first()
+                room = db.query(Room).filter(Room.id == b.room_id).first()
+                name = f"{guest.first_name} {guest.last_name}" if guest else "Unknown"
+                rnum = room.room_number if room else "N/A"
+                lines.append(f"- {name} -> Room {rnum} (Ref: {b.booking_ref})")
+            return f"Today's expected check-ins ({len(checkins)}):\n" + "\n".join(lines)
+        return "No check-ins expected today."
+
+    # Today's check-outs
+    if any(kw in lower for kw in ["today check-out", "today's check-out", "checkout today", "check out today", "departing today"]):
+        checkouts = db.query(Booking).filter(
+            Booking.check_out_date == today,
+            Booking.status == BookingStatus.CHECKED_IN,
+        ).all()
+        if checkouts:
+            lines = []
+            for b in checkouts:
+                guest = db.query(Guest).filter(Guest.id == b.guest_id).first()
+                room = db.query(Room).filter(Room.id == b.room_id).first()
+                name = f"{guest.first_name} {guest.last_name}" if guest else "Unknown"
+                rnum = room.room_number if room else "N/A"
+                lines.append(f"- {name} from Room {rnum} (Ref: {b.booking_ref})")
+            return f"Today's expected check-outs ({len(checkouts)}):\n" + "\n".join(lines)
+        return "No check-outs expected today."
+
+    # Guest search
+    if any(kw in lower for kw in ["find guest", "search guest", "guest info", "guest details", "lookup guest"]):
+        # Try to extract a name
+        for prefix in ["find guest ", "search guest ", "guest info ", "guest details ", "lookup guest "]:
+            if lower.startswith(prefix):
+                search_term = content[len(prefix):].strip()
+                guests = db.query(Guest).filter(
+                    (Guest.first_name.ilike(f"%{search_term}%")) |
+                    (Guest.last_name.ilike(f"%{search_term}%")) |
+                    (Guest.phone.ilike(f"%{search_term}%"))
+                ).limit(5).all()
+                if guests:
+                    lines = []
+                    for g in guests:
+                        vip = " [VIP]" if g.is_vip else ""
+                        lines.append(f"- {g.first_name} {g.last_name} | {g.phone} | {g.email or 'No email'}{vip}")
+                    return f"Found {len(guests)} guest(s):\n" + "\n".join(lines)
+                return f"No guests found matching '{search_term}'."
+        return "Please specify a guest name or phone, e.g., 'Find guest John'"
+
+    # Booking search
+    if any(kw in lower for kw in ["find booking", "search booking", "booking info", "booking ref"]):
+        for prefix in ["find booking ", "search booking ", "booking info ", "booking ref "]:
+            if lower.startswith(prefix):
+                ref_term = content[len(prefix):].strip()
+                booking = db.query(Booking).filter(Booking.booking_ref.ilike(f"%{ref_term}%")).first()
+                if booking:
+                    guest = db.query(Guest).filter(Guest.id == booking.guest_id).first()
+                    room = db.query(Room).filter(Room.id == booking.room_id).first()
+                    name = f"{guest.first_name} {guest.last_name}" if guest else "Unknown"
+                    rnum = room.room_number if room else "N/A"
+                    return (
+                        f"Booking {booking.booking_ref}:\n"
+                        f"- Guest: {name}\n"
+                        f"- Room: {rnum}\n"
+                        f"- Check-in: {booking.check_in_date}\n"
+                        f"- Check-out: {booking.check_out_date}\n"
+                        f"- Status: {booking.status.value}\n"
+                        f"- Total: ${booking.total_amount}"
+                    )
+                return f"No booking found matching '{ref_term}'."
+        return "Please specify a booking reference, e.g., 'Find booking BK240101ABCD'"
+
+    # Occupancy
+    if any(kw in lower for kw in ["occupancy", "how many occupied", "occupied rooms"]):
+        total = db.query(func.count(Room.id)).scalar() or 0
+        occupied = db.query(func.count(Room.id)).filter(
+            Room.status.in_([RoomStatus.CHECKED_IN, RoomStatus.BOOKED])
+        ).scalar() or 0
+        rate = round((occupied / total * 100), 1) if total > 0 else 0
+        return f"Current occupancy: {occupied}/{total} rooms ({rate}%). {total - occupied} rooms available."
+
+    # Guest count
+    if any(kw in lower for kw in ["how many guest", "total guest", "guest count"]):
+        total = db.query(func.count(Guest.id)).scalar() or 0
+        vip = db.query(func.count(Guest.id)).filter(Guest.is_vip == True).scalar() or 0
+        return f"Total guests in system: {total} ({vip} VIP guests)."
+
+    # Revenue
+    if any(kw in lower for kw in ["revenue", "income", "earnings"]):
+        total_rev = db.query(func.sum(Booking.total_amount)).filter(
+            Booking.status.in_([BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT])
+        ).scalar() or 0
+        return f"Total revenue from completed/active bookings: ${total_rev:,.2f}"
+
+    # Default response with suggestions
+    return (
+        "I can help you with hotel data. Try asking:\n"
+        "- 'Show available rooms'\n"
+        "- 'Today's check-ins'\n"
+        "- 'Today's check-outs'\n"
+        "- 'Find guest [name]'\n"
+        "- 'Find booking [ref]'\n"
+        "- 'Current occupancy'\n"
+        "- 'Total guests'\n"
+        "- 'Revenue summary'"
+    )
+
+
 # ============ AI Chat ============
 
 @router.get("/ai/sessions", response_model=List[AIChatSessionResponse])
@@ -315,9 +528,8 @@ def send_ai_message(
     db.add(user_message)
     db.commit()
 
-    # TODO: Integrate with OpenAI/LLM to generate response
-    # For now, return a placeholder
-    ai_response = "I'm your hotel AI assistant. I can help you with room availability, bookings, and guest information. What would you like to know?"
+    # Generate smart response by querying the database
+    ai_response = _generate_smart_response(message_data.content, db)
 
     # Save AI message
     ai_message = AIChatMessage(

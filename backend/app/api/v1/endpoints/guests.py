@@ -1,7 +1,7 @@
 """Guest CRM endpoints."""
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
@@ -9,7 +9,9 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.guest import Guest
-from app.schemas.guest import GuestCreate, GuestUpdate, GuestResponse
+from app.schemas.guest import GuestCreate, GuestUpdate, GuestResponse, DocumentUploadResponse
+from app.utils.file_upload import save_upload_file
+from app.services.document_service import check_document_clarity
 
 router = APIRouter()
 
@@ -263,3 +265,60 @@ def delete_guest(
     db.commit()
 
     return None
+
+
+@router.post("/{guest_id}/upload-document", response_model=DocumentUploadResponse)
+async def upload_guest_document(
+    guest_id: int,
+    file: UploadFile = File(...),
+    side: str = Form("front"),  # front or back
+    document_type: str = Form(""),  # passport, aadhar, drivers_license, national_id
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a guest identity document image and check clarity."""
+    guest = db.query(Guest).filter(Guest.id == guest_id).first()
+    if not guest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Guest not found",
+        )
+
+    if side not in ("front", "back"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Side must be 'front' or 'back'",
+        )
+
+    # Save the uploaded file
+    file_url = await save_upload_file(
+        file,
+        subfolder=f"documents/guest_{guest_id}",
+    )
+
+    # Check document clarity
+    clarity_status, clarity_notes = check_document_clarity(file_url)
+
+    # Update guest record
+    if side == "front":
+        guest.id_document_front_url = file_url
+    else:
+        guest.id_document_back_url = file_url
+
+    guest.document_clarity_status = clarity_status
+    guest.document_clarity_notes = clarity_notes
+
+    # Update document type if provided
+    if document_type:
+        guest.id_type = document_type
+
+    db.commit()
+    db.refresh(guest)
+
+    return DocumentUploadResponse(
+        file_url=file_url,
+        side=side,
+        clarity_status=clarity_status,
+        clarity_notes=clarity_notes,
+        guest_id=guest_id,
+    )
