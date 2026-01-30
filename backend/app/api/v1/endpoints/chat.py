@@ -106,7 +106,7 @@ def send_whatsapp_message(
     # Create message record
     message = WhatsAppMessage(
         chat_id=chat_id,
-        direction=MessageDirection.OUTBOUND,
+        direction=MessageDirection.outbound,
         message_type=message_data.message_type,
         content=message_data.content,
         media_url=message_data.media_url,
@@ -186,7 +186,7 @@ def resolve_chat(
             detail="Chat not found",
         )
 
-    chat.status = ChatStatus.RESOLVED
+    chat.status = ChatStatus.resolved
     db.commit()
 
     return {"status": "success", "message": "Chat marked as resolved"}
@@ -231,20 +231,20 @@ def get_data_summary(
 
     # Room stats
     total_rooms = db.query(func.count(Room.id)).scalar() or 0
-    available_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.AVAILABLE).scalar() or 0
-    occupied_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.CHECKED_IN).scalar() or 0
-    booked_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.BOOKED).scalar() or 0
-    maintenance_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.MAINTENANCE).scalar() or 0
+    available_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.available).scalar() or 0
+    occupied_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.checked_in).scalar() or 0
+    booked_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.booked).scalar() or 0
+    maintenance_rooms = db.query(func.count(Room.id)).filter(Room.status == RoomStatus.maintenance).scalar() or 0
 
     # Today's check-ins/check-outs
     todays_checkins = db.query(Booking).filter(
         Booking.check_in_date == today,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).all()
 
     todays_checkouts = db.query(Booking).filter(
         Booking.check_out_date == today,
-        Booking.status == BookingStatus.CHECKED_IN,
+        Booking.status == BookingStatus.checked_in,
     ).all()
 
     # Load guest info for today's bookings
@@ -276,7 +276,7 @@ def get_data_summary(
 
     # Active bookings
     active_bookings = db.query(func.count(Booking.id)).filter(
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING, BookingStatus.CHECKED_IN])
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending, BookingStatus.checked_in])
     ).scalar() or 0
 
     return {
@@ -310,7 +310,7 @@ def _generate_smart_response(content: str, db: Session) -> str:
 
     # Room availability query
     if any(kw in lower for kw in ["room", "available", "availability", "vacant", "free room"]):
-        available = db.query(Room).filter(Room.status == RoomStatus.AVAILABLE).all()
+        available = db.query(Room).filter(Room.status == RoomStatus.available).all()
         if available:
             room_list = ", ".join([f"Room {r.room_number} (Floor {r.floor})" for r in available[:10]])
             return f"There are {len(available)} available rooms: {room_list}."
@@ -320,7 +320,7 @@ def _generate_smart_response(content: str, db: Session) -> str:
     if any(kw in lower for kw in ["today check-in", "today's check-in", "checkin today", "check in today", "arriving today"]):
         checkins = db.query(Booking).filter(
             Booking.check_in_date == today,
-            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+            Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
         ).all()
         if checkins:
             lines = []
@@ -337,7 +337,7 @@ def _generate_smart_response(content: str, db: Session) -> str:
     if any(kw in lower for kw in ["today check-out", "today's check-out", "checkout today", "check out today", "departing today"]):
         checkouts = db.query(Booking).filter(
             Booking.check_out_date == today,
-            Booking.status == BookingStatus.CHECKED_IN,
+            Booking.status == BookingStatus.checked_in,
         ).all()
         if checkouts:
             lines = []
@@ -397,7 +397,7 @@ def _generate_smart_response(content: str, db: Session) -> str:
     if any(kw in lower for kw in ["occupancy", "how many occupied", "occupied rooms"]):
         total = db.query(func.count(Room.id)).scalar() or 0
         occupied = db.query(func.count(Room.id)).filter(
-            Room.status.in_([RoomStatus.CHECKED_IN, RoomStatus.BOOKED])
+            Room.status.in_([RoomStatus.checked_in, RoomStatus.booked])
         ).scalar() or 0
         rate = round((occupied / total * 100), 1) if total > 0 else 0
         return f"Current occupancy: {occupied}/{total} rooms ({rate}%). {total - occupied} rooms available."
@@ -411,7 +411,7 @@ def _generate_smart_response(content: str, db: Session) -> str:
     # Revenue
     if any(kw in lower for kw in ["revenue", "income", "earnings"]):
         total_rev = db.query(func.sum(Booking.total_amount)).filter(
-            Booking.status.in_([BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT])
+            Booking.status.in_([BookingStatus.checked_in, BookingStatus.checked_out])
         ).scalar() or 0
         return f"Total revenue from completed/active bookings: ${total_rev:,.2f}"
 

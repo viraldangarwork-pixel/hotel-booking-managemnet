@@ -162,7 +162,7 @@ def check_availability(
     query = db.query(Room).filter(
         Room.hotel_id == hotel_id,
         Room.is_active == True,
-        Room.status != RoomStatus.MAINTENANCE,
+        Room.status != RoomStatus.maintenance,
     )
 
     if room_type_id:
@@ -174,9 +174,9 @@ def check_availability(
     booked_room_ids = db.query(Booking.room_id).filter(
         Booking.hotel_id == hotel_id,
         Booking.status.in_([
-            BookingStatus.CONFIRMED,
-            BookingStatus.CHECKED_IN,
-            BookingStatus.PENDING,
+            BookingStatus.confirmed,
+            BookingStatus.checked_in,
+            BookingStatus.pending,
         ]),
         and_(
             Booking.check_in_date < check_out_date,

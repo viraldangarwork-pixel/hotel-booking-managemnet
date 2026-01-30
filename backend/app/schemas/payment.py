@@ -13,7 +13,7 @@ class PaymentBase(BaseSchema):
     """Base payment schema."""
 
     amount: Decimal = Field(..., ge=0)
-    method: PaymentMethod = PaymentMethod.CASH
+    method: PaymentMethod = PaymentMethod.cash
     notes: Optional[str] = None
 
 

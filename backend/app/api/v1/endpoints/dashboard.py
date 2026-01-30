@@ -57,19 +57,19 @@ def get_dashboard_stats(
     today_check_ins = db.query(func.count(Booking.id)).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_in_date == today,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).scalar()
 
     today_check_outs = db.query(func.count(Booking.id)).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_out_date == today,
-        Booking.status == BookingStatus.CHECKED_IN,
+        Booking.status == BookingStatus.checked_in,
     ).scalar()
 
     # Pending bookings
     pending_bookings = db.query(func.count(Booking.id)).filter(
         Booking.hotel_id == hotel_id,
-        Booking.status == BookingStatus.PENDING,
+        Booking.status == BookingStatus.pending,
     ).scalar()
 
     # Total guests
@@ -84,7 +84,7 @@ def get_dashboard_stats(
     ).filter(
         Booking.hotel_id == hotel_id,
         func.date(Payment.paid_at) == today,
-        Payment.status == PaymentStatus.COMPLETED,
+        Payment.status == PaymentStatus.completed,
     ).scalar() or Decimal(0)
 
     # Revenue this month
@@ -94,7 +94,7 @@ def get_dashboard_stats(
     ).filter(
         Booking.hotel_id == hotel_id,
         func.date(Payment.paid_at) >= first_of_month,
-        Payment.status == PaymentStatus.COMPLETED,
+        Payment.status == PaymentStatus.completed,
     ).scalar() or Decimal(0)
 
     # Unread messages
@@ -148,9 +148,9 @@ def get_occupancy_trend(
             Booking.check_in_date <= check_date,
             Booking.check_out_date > check_date,
             Booking.status.in_([
-                BookingStatus.CONFIRMED,
-                BookingStatus.CHECKED_IN,
-                BookingStatus.CHECKED_OUT,
+                BookingStatus.confirmed,
+                BookingStatus.checked_in,
+                BookingStatus.checked_out,
             ]),
         ).scalar()
 
@@ -189,7 +189,7 @@ def get_revenue_trend(
         ).filter(
             Booking.hotel_id == hotel_id,
             func.date(Payment.paid_at) == check_date,
-            Payment.status == PaymentStatus.COMPLETED,
+            Payment.status == PaymentStatus.completed,
         ).first()
 
         result.append(RevenueData(
@@ -216,7 +216,7 @@ def get_upcoming_arrivals(
         Booking.hotel_id == hotel_id,
         Booking.check_in_date >= today,
         Booking.check_in_date <= end_date,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).order_by(Booking.check_in_date).all()
 
     result = []
@@ -256,7 +256,7 @@ def get_ai_insights(
 
     occupied = db.query(func.count(Room.id)).filter(
         Room.hotel_id == hotel_id,
-        Room.status.in_([RoomStatus.CHECKED_IN, RoomStatus.BOOKED]),
+        Room.status.in_([RoomStatus.checked_in, RoomStatus.booked]),
     ).scalar()
 
     occupancy_rate = (occupied / total_rooms * 100) if total_rooms > 0 else 0
@@ -273,7 +273,7 @@ def get_ai_insights(
     # Check for pending bookings
     pending = db.query(func.count(Booking.id)).filter(
         Booking.hotel_id == hotel_id,
-        Booking.status == BookingStatus.PENDING,
+        Booking.status == BookingStatus.pending,
     ).scalar()
 
     if pending > 5:
@@ -290,7 +290,7 @@ def get_ai_insights(
         Booking.hotel_id == hotel_id,
         Booking.check_in_date == today,
         Guest.is_vip == True,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).count()
 
     if vip_arrivals > 0:
@@ -304,7 +304,7 @@ def get_ai_insights(
     # Rooms needing maintenance
     maintenance_rooms = db.query(func.count(Room.id)).filter(
         Room.hotel_id == hotel_id,
-        Room.status == RoomStatus.MAINTENANCE,
+        Room.status == RoomStatus.maintenance,
     ).scalar()
 
     if maintenance_rooms > 0:
@@ -352,13 +352,13 @@ def get_today_bookings_internal(hotel_id: int, db: Session) -> dict:
     check_ins = db.query(Booking).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_in_date == today,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).all()
 
     check_outs = db.query(Booking).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_out_date == today,
-        Booking.status == BookingStatus.CHECKED_IN,
+        Booking.status == BookingStatus.checked_in,
     ).all()
 
     result_check_ins = []
@@ -414,7 +414,7 @@ def get_room_type_occupancy(hotel_id: int, db: Session) -> List[RoomTypeOccupanc
         occupied = db.query(func.count(Room.id)).filter(
             Room.room_type_id == rt.id,
             Room.is_active == True,
-            Room.status.in_([RoomStatus.CHECKED_IN, RoomStatus.BOOKED]),
+            Room.status.in_([RoomStatus.checked_in, RoomStatus.booked]),
         ).scalar()
 
         occupancy_rate = (occupied / total * 100) if total > 0 else 0

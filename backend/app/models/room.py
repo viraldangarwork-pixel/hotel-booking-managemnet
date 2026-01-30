@@ -10,12 +10,12 @@ from .base import BaseModel
 class RoomStatus(str, enum.Enum):
     """Room status enum."""
 
-    AVAILABLE = "available"
-    BOOKED = "booked"
-    CHECKED_IN = "checked_in"
-    CHECKED_OUT = "checked_out"
-    MAINTENANCE = "maintenance"
-    CLEANING = "cleaning"
+    available = "available"
+    booked = "booked"
+    checked_in = "checked_in"
+    checked_out = "checked_out"
+    maintenance = "maintenance"
+    cleaning = "cleaning"
 
 
 class RoomType(BaseModel):
@@ -65,7 +65,7 @@ class Room(BaseModel):
     floor = Column(Integer, default=1, nullable=False)
 
     status = Column(
-        Enum(RoomStatus), default=RoomStatus.AVAILABLE, nullable=False
+        Enum(RoomStatus), default=RoomStatus.available, nullable=False
     )
 
     # Room-specific notes

@@ -141,12 +141,12 @@ class AIService:
 
             available = self.db.query(Room).filter(
                 Room.hotel_id == hotel_id,
-                Room.status == RoomStatus.AVAILABLE,
+                Room.status == RoomStatus.available,
             ).count()
 
             occupied = self.db.query(Room).filter(
                 Room.hotel_id == hotel_id,
-                Room.status == RoomStatus.CHECKED_IN,
+                Room.status == RoomStatus.checked_in,
             ).count()
 
             context["rooms"] = {
@@ -161,13 +161,13 @@ class AIService:
             today_check_ins = self.db.query(Booking).filter(
                 Booking.hotel_id == hotel_id,
                 Booking.check_in_date == today,
-                Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+                Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
             ).count()
 
             today_check_outs = self.db.query(Booking).filter(
                 Booking.hotel_id == hotel_id,
                 Booking.check_out_date == today,
-                Booking.status == BookingStatus.CHECKED_IN,
+                Booking.status == BookingStatus.checked_in,
             ).count()
 
             context["today"] = {
@@ -313,7 +313,7 @@ class AIService:
 
         occupied = self.db.query(Room).filter(
             Room.hotel_id == hotel_id,
-            Room.status.in_([RoomStatus.CHECKED_IN, RoomStatus.BOOKED]),
+            Room.status.in_([RoomStatus.checked_in, RoomStatus.booked]),
         ).count()
 
         occupancy_rate = (occupied / total_rooms * 100) if total_rooms > 0 else 0
@@ -330,7 +330,7 @@ class AIService:
         # Check pending bookings
         pending = self.db.query(Booking).filter(
             Booking.hotel_id == hotel_id,
-            Booking.status == BookingStatus.PENDING,
+            Booking.status == BookingStatus.pending,
         ).count()
 
         if pending > 5:

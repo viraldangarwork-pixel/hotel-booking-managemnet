@@ -88,7 +88,7 @@ def create_payment(
         booking_id=payment_data.booking_id,
         amount=payment_data.amount,
         method=payment_data.method,
-        status=PaymentStatus.COMPLETED,
+        status=PaymentStatus.completed,
         transaction_id=payment_data.transaction_id,
         gateway=payment_data.gateway,
         notes=payment_data.notes,
@@ -124,7 +124,7 @@ def refund_payment(
             detail="Payment not found",
         )
 
-    if payment.status != PaymentStatus.COMPLETED:
+    if payment.status != PaymentStatus.completed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment cannot be refunded",
@@ -142,9 +142,9 @@ def refund_payment(
     payment.refunded_at = datetime.now()
 
     if refund_data.refund_amount == payment.amount:
-        payment.status = PaymentStatus.REFUNDED
+        payment.status = PaymentStatus.refunded
     else:
-        payment.status = PaymentStatus.PARTIALLY_REFUNDED
+        payment.status = PaymentStatus.partially_refunded
 
     # Update booking
     booking = db.query(Booking).filter(Booking.id == payment.booking_id).first()
@@ -174,7 +174,7 @@ def get_booking_payment_summary(
 
     payments = db.query(Payment).filter(
         Payment.booking_id == booking_id,
-        Payment.status.in_([PaymentStatus.COMPLETED, PaymentStatus.PARTIALLY_REFUNDED]),
+        Payment.status.in_([PaymentStatus.completed, PaymentStatus.partially_refunded]),
     ).all()
 
     total_paid = sum(p.amount - (p.refund_amount or 0) for p in payments)

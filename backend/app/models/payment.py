@@ -11,23 +11,23 @@ from .base import BaseModel
 class PaymentStatus(str, enum.Enum):
     """Payment status enum."""
 
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    REFUNDED = "refunded"
-    PARTIALLY_REFUNDED = "partially_refunded"
+    pending = "pending"
+    completed = "completed"
+    failed = "failed"
+    refunded = "refunded"
+    partially_refunded = "partially_refunded"
 
 
 class PaymentMethod(str, enum.Enum):
     """Payment method enum."""
 
-    CASH = "cash"
-    CARD = "card"
-    UPI = "upi"
-    BANK_TRANSFER = "bank_transfer"
-    CHEQUE = "cheque"
-    ONLINE = "online"
-    WALLET = "wallet"
+    cash = "cash"
+    card = "card"
+    upi = "upi"
+    bank_transfer = "bank_transfer"
+    cheque = "cheque"
+    online = "online"
+    wallet = "wallet"
 
 
 class Payment(BaseModel):
@@ -45,10 +45,10 @@ class Payment(BaseModel):
     currency = Column(String(3), default="INR", nullable=False)
 
     method = Column(
-        Enum(PaymentMethod), default=PaymentMethod.CASH, nullable=False
+        Enum(PaymentMethod), default=PaymentMethod.cash, nullable=False
     )
     status = Column(
-        Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False
+        Enum(PaymentStatus), default=PaymentStatus.pending, nullable=False
     )
 
     # Transaction details

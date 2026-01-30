@@ -28,7 +28,7 @@ class BookingCreate(BookingBase):
     hotel_id: int
     room_id: int
     guest_id: int
-    source: BookingSource = BookingSource.DIRECT
+    source: BookingSource = BookingSource.direct
     discount_code: Optional[str] = None
 
 

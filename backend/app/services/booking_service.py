@@ -57,9 +57,9 @@ class BookingService:
         query = self.db.query(Booking).filter(
             Booking.room_id == room_id,
             Booking.status.in_([
-                BookingStatus.CONFIRMED,
-                BookingStatus.CHECKED_IN,
-                BookingStatus.PENDING,
+                BookingStatus.confirmed,
+                BookingStatus.checked_in,
+                BookingStatus.pending,
             ]),
             and_(
                 Booking.check_in_date < check_out_date,
@@ -86,7 +86,7 @@ class BookingService:
         query = self.db.query(Room).filter(
             Room.hotel_id == hotel_id,
             Room.is_active == True,
-            Room.status != RoomStatus.MAINTENANCE,
+            Room.status != RoomStatus.maintenance,
         )
 
         if room_type_id:
@@ -98,9 +98,9 @@ class BookingService:
         booked_room_ids = self.db.query(Booking.room_id).filter(
             Booking.hotel_id == hotel_id,
             Booking.status.in_([
-                BookingStatus.CONFIRMED,
-                BookingStatus.CHECKED_IN,
-                BookingStatus.PENDING,
+                BookingStatus.confirmed,
+                BookingStatus.checked_in,
+                BookingStatus.pending,
             ]),
             and_(
                 Booking.check_in_date < check_out_date,
@@ -132,7 +132,7 @@ class BookingService:
         adults: int = 1,
         children: int = 0,
         extra_beds: int = 0,
-        source: BookingSource = BookingSource.DIRECT,
+        source: BookingSource = BookingSource.direct,
         special_requests: Optional[str] = None,
         discount_code: Optional[str] = None,
     ) -> Booking:
@@ -194,7 +194,7 @@ class BookingService:
 
         # Update room status if check-in is today
         if check_in_date == date.today():
-            room.status = RoomStatus.BOOKED
+            room.status = RoomStatus.booked
             self.db.commit()
 
         return booking
@@ -211,18 +211,18 @@ class BookingService:
         if not booking:
             raise ValueError("Booking not found")
 
-        if booking.status not in [BookingStatus.CONFIRMED, BookingStatus.PENDING]:
+        if booking.status not in [BookingStatus.confirmed, BookingStatus.pending]:
             raise ValueError("Booking cannot be checked in")
 
         # Update booking
-        booking.status = BookingStatus.CHECKED_IN
+        booking.status = BookingStatus.checked_in
         booking.actual_check_in = datetime.now()
         if notes:
             booking.internal_notes = notes
 
         # Update room status
         room = self.db.query(Room).filter(Room.id == booking.room_id).first()
-        room.status = RoomStatus.CHECKED_IN
+        room.status = RoomStatus.checked_in
 
         # Update guest ID if provided
         if id_type and id_number:
@@ -246,7 +246,7 @@ class BookingService:
         if not booking:
             raise ValueError("Booking not found")
 
-        if booking.status != BookingStatus.CHECKED_IN:
+        if booking.status != BookingStatus.checked_in:
             raise ValueError("Guest is not checked in")
 
         # Add additional charges
@@ -258,14 +258,14 @@ class BookingService:
             booking.total_amount = Decimal(str(booking.total_amount)) + Decimal(str(additional_total))
 
         # Update booking
-        booking.status = BookingStatus.CHECKED_OUT
+        booking.status = BookingStatus.checked_out
         booking.actual_check_out = datetime.now()
         if notes:
             booking.internal_notes = (booking.internal_notes or "") + f"\nCheckout: {notes}"
 
         # Update room status
         room = self.db.query(Room).filter(Room.id == booking.room_id).first()
-        room.status = RoomStatus.CLEANING
+        room.status = RoomStatus.cleaning
 
         # Update guest stats
         guest = self.db.query(Guest).filter(Guest.id == booking.guest_id).first()
@@ -288,17 +288,17 @@ class BookingService:
         if not booking:
             raise ValueError("Booking not found")
 
-        if booking.status in [BookingStatus.CHECKED_OUT, BookingStatus.CANCELLED]:
+        if booking.status in [BookingStatus.checked_out, BookingStatus.cancelled]:
             raise ValueError("Booking cannot be cancelled")
 
-        booking.status = BookingStatus.CANCELLED
+        booking.status = BookingStatus.cancelled
         booking.cancelled_at = datetime.now()
         booking.cancellation_reason = reason
 
         # Update room status if it was booked
         room = self.db.query(Room).filter(Room.id == booking.room_id).first()
-        if room.status == RoomStatus.BOOKED:
-            room.status = RoomStatus.AVAILABLE
+        if room.status == RoomStatus.booked:
+            room.status = RoomStatus.available
 
         self.db.commit()
         self.db.refresh(booking)
@@ -310,7 +310,7 @@ class BookingService:
         return self.db.query(Booking).filter(
             Booking.hotel_id == hotel_id,
             Booking.check_in_date == date.today(),
-            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+            Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
         ).all()
 
     def get_today_departures(self, hotel_id: int) -> List[Booking]:
@@ -318,7 +318,7 @@ class BookingService:
         return self.db.query(Booking).filter(
             Booking.hotel_id == hotel_id,
             Booking.check_out_date == date.today(),
-            Booking.status == BookingStatus.CHECKED_IN,
+            Booking.status == BookingStatus.checked_in,
         ).all()
 
     def get_occupancy_rate(self, hotel_id: int, target_date: date = None) -> float:
@@ -339,8 +339,8 @@ class BookingService:
             Booking.check_in_date <= target_date,
             Booking.check_out_date > target_date,
             Booking.status.in_([
-                BookingStatus.CONFIRMED,
-                BookingStatus.CHECKED_IN,
+                BookingStatus.confirmed,
+                BookingStatus.checked_in,
             ]),
         ).count()
 

@@ -112,7 +112,7 @@ def update_user(
 
     # Check permissions
     is_self = current_user.id == user_id
-    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPERADMIN] or current_user.is_superuser
+    is_admin = current_user.role in [UserRole.admin, UserRole.superadmin] or current_user.is_superuser
 
     if not is_self and not is_admin:
         raise HTTPException(

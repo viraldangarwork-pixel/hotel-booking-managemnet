@@ -20,7 +20,7 @@ class PaymentService:
         self,
         booking_id: int,
         amount: Decimal,
-        method: PaymentMethod = PaymentMethod.CASH,
+        method: PaymentMethod = PaymentMethod.cash,
         transaction_id: Optional[str] = None,
         gateway: Optional[str] = None,
         notes: Optional[str] = None,
@@ -36,7 +36,7 @@ class PaymentService:
             booking_id=booking_id,
             amount=amount,
             method=method,
-            status=PaymentStatus.COMPLETED,
+            status=PaymentStatus.completed,
             transaction_id=transaction_id,
             gateway=gateway,
             notes=notes,
@@ -67,7 +67,7 @@ class PaymentService:
         if not payment:
             raise ValueError("Payment not found")
 
-        if payment.status != PaymentStatus.COMPLETED:
+        if payment.status != PaymentStatus.completed:
             raise ValueError("Payment cannot be refunded")
 
         if refund_amount > payment.amount:
@@ -78,9 +78,9 @@ class PaymentService:
         payment.refunded_at = datetime.now()
 
         if refund_amount == payment.amount:
-            payment.status = PaymentStatus.REFUNDED
+            payment.status = PaymentStatus.refunded
         else:
-            payment.status = PaymentStatus.PARTIALLY_REFUNDED
+            payment.status = PaymentStatus.partially_refunded
 
         # Update booking
         booking = self.db.query(Booking).filter(Booking.id == payment.booking_id).first()
@@ -101,7 +101,7 @@ class PaymentService:
 
         payments = self.db.query(Payment).filter(
             Payment.booking_id == booking_id,
-            Payment.status.in_([PaymentStatus.COMPLETED, PaymentStatus.PARTIALLY_REFUNDED]),
+            Payment.status.in_([PaymentStatus.completed, PaymentStatus.partially_refunded]),
         ).all()
 
         total_paid = sum(p.amount - (p.refund_amount or 0) for p in payments)
@@ -126,7 +126,7 @@ class PaymentService:
         ).filter(
             Booking.hotel_id == hotel_id,
             func.date(Payment.paid_at) == target_date,
-            Payment.status == PaymentStatus.COMPLETED,
+            Payment.status == PaymentStatus.completed,
         ).scalar()
 
         return result or Decimal(0)
@@ -141,7 +141,7 @@ class PaymentService:
             Booking.hotel_id == hotel_id,
             extract('year', Payment.paid_at) == year,
             extract('month', Payment.paid_at) == month,
-            Payment.status == PaymentStatus.COMPLETED,
+            Payment.status == PaymentStatus.completed,
         ).scalar()
 
         return result or Decimal(0)
@@ -170,7 +170,7 @@ class PaymentService:
             Booking.hotel_id == hotel_id,
             func.date(Payment.paid_at) >= start_date,
             func.date(Payment.paid_at) <= end_date,
-            Payment.status == PaymentStatus.COMPLETED,
+            Payment.status == PaymentStatus.completed,
         ).group_by(Payment.method).all()
 
         return {method.value: float(amount) for method, amount in results}
@@ -192,7 +192,7 @@ class PaymentService:
 
         payments = self.db.query(Payment).filter(
             Payment.booking_id == booking_id,
-            Payment.status.in_([PaymentStatus.COMPLETED, PaymentStatus.PARTIALLY_REFUNDED]),
+            Payment.status.in_([PaymentStatus.completed, PaymentStatus.partially_refunded]),
         ).all()
 
         nights = (booking.check_out_date - booking.check_in_date).days

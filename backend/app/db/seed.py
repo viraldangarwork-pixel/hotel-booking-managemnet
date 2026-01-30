@@ -52,7 +52,7 @@ def create_admin_user(db: Session) -> User:
         hashed_password=get_password_hash(ADMIN_PASSWORD),
         full_name=ADMIN_NAME,
         phone="+1234567890",
-        role=UserRole.SUPERADMIN,
+        role=UserRole.superadmin,
         is_active=True,
         is_superuser=True,
     )
@@ -223,7 +223,7 @@ def create_sample_rooms(db: Session, hotel: Hotel, room_types: dict) -> list:
             room_type_id=rt.id,
             room_number=room_data["number"],
             floor=room_data["floor"],
-            status=RoomStatus.AVAILABLE,
+            status=RoomStatus.available,
             is_active=True,
         )
         rooms.append(room)
@@ -305,19 +305,19 @@ def create_staff_users(db: Session, hotel: Hotel) -> list:
             "email": "manager@hotel.com",
             "password": "Manager@123",
             "name": "John Manager",
-            "role": UserRole.MANAGER,
+            "role": UserRole.manager,
         },
         {
             "email": "receptionist@hotel.com",
             "password": "Reception@123",
             "name": "Jane Receptionist",
-            "role": UserRole.RECEPTIONIST,
+            "role": UserRole.receptionist,
         },
         {
             "email": "staff@hotel.com",
             "password": "Staff@123",
             "name": "Bob Staff",
-            "role": UserRole.STAFF,
+            "role": UserRole.staff,
         },
     ]
 

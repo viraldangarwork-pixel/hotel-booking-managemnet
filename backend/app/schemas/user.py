@@ -13,7 +13,7 @@ class UserBase(BaseSchema):
     email: EmailStr
     full_name: str = Field(..., min_length=1, max_length=255)
     phone: Optional[str] = None
-    role: UserRole = UserRole.STAFF
+    role: UserRole = UserRole.staff
     hotel_id: Optional[int] = None
 
 

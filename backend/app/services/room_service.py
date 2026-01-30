@@ -62,8 +62,8 @@ class RoomService:
         """Mark all cleaning rooms as available (after housekeeping completes)."""
         result = self.db.query(Room).filter(
             Room.hotel_id == hotel_id,
-            Room.status == RoomStatus.CLEANING,
-        ).update({Room.status: RoomStatus.AVAILABLE})
+            Room.status == RoomStatus.cleaning,
+        ).update({Room.status: RoomStatus.available})
 
         self.db.commit()
         return result
@@ -86,16 +86,16 @@ class RoomService:
             total = self.db.query(Room).filter(
                 Room.room_type_id == rt.id,
                 Room.is_active == True,
-                Room.status != RoomStatus.MAINTENANCE,
+                Room.status != RoomStatus.maintenance,
             ).count()
 
             # Booked rooms for these dates
             booked = self.db.query(Booking).join(Room).filter(
                 Room.room_type_id == rt.id,
                 Booking.status.in_([
-                    BookingStatus.CONFIRMED,
-                    BookingStatus.CHECKED_IN,
-                    BookingStatus.PENDING,
+                    BookingStatus.confirmed,
+                    BookingStatus.checked_in,
+                    BookingStatus.pending,
                 ]),
                 Booking.check_in_date < check_out_date,
                 Booking.check_out_date > check_in_date,
@@ -137,7 +137,7 @@ class RoomService:
             floor=floor,
             notes=notes,
             custom_price=custom_price,
-            status=RoomStatus.AVAILABLE,
+            status=RoomStatus.available,
         )
 
         self.db.add(room)
@@ -190,7 +190,7 @@ class RoomService:
         """Get all rooms under maintenance."""
         return self.db.query(Room).filter(
             Room.hotel_id == hotel_id,
-            Room.status == RoomStatus.MAINTENANCE,
+            Room.status == RoomStatus.maintenance,
         ).all()
 
     def set_room_maintenance(
@@ -203,7 +203,7 @@ class RoomService:
         if not room:
             raise ValueError("Room not found")
 
-        room.status = RoomStatus.MAINTENANCE
+        room.status = RoomStatus.maintenance
         if notes:
             room.notes = notes
 

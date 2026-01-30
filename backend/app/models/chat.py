@@ -10,26 +10,26 @@ from .base import BaseModel
 class MessageDirection(str, enum.Enum):
     """Message direction enum."""
 
-    INBOUND = "inbound"
-    OUTBOUND = "outbound"
+    inbound = "inbound"
+    outbound = "outbound"
 
 
 class MessageStatus(str, enum.Enum):
     """WhatsApp message status enum."""
 
-    SENT = "sent"
-    DELIVERED = "delivered"
-    READ = "read"
-    FAILED = "failed"
+    sent = "sent"
+    delivered = "delivered"
+    read = "read"
+    failed = "failed"
 
 
 class ChatStatus(str, enum.Enum):
     """Chat conversation status."""
 
-    ACTIVE = "active"
-    RESOLVED = "resolved"
-    PENDING_HUMAN = "pending_human"
-    CLOSED = "closed"
+    active = "active"
+    resolved = "resolved"
+    pending_human = "pending_human"
+    closed = "closed"
 
 
 class WhatsAppChat(BaseModel):
@@ -46,7 +46,7 @@ class WhatsAppChat(BaseModel):
 
     # Conversation status
     status = Column(
-        Enum(ChatStatus), default=ChatStatus.ACTIVE, nullable=False
+        Enum(ChatStatus), default=ChatStatus.active, nullable=False
     )
 
     # Bot handling
@@ -90,7 +90,7 @@ class WhatsAppMessage(BaseModel):
 
     # Status tracking (for outbound)
     status = Column(
-        Enum(MessageStatus), default=MessageStatus.SENT, nullable=True
+        Enum(MessageStatus), default=MessageStatus.sent, nullable=True
     )
 
     # Bot or human sent

@@ -102,13 +102,13 @@ def get_today_bookings(
     check_ins = db.query(Booking).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_in_date == today,
-        Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        Booking.status.in_([BookingStatus.confirmed, BookingStatus.pending]),
     ).all()
 
     check_outs = db.query(Booking).filter(
         Booking.hotel_id == hotel_id,
         Booking.check_out_date == today,
-        Booking.status == BookingStatus.CHECKED_IN,
+        Booking.status == BookingStatus.checked_in,
     ).all()
 
     # Load related objects
@@ -191,9 +191,9 @@ def create_booking(
     overlapping = db.query(Booking).filter(
         Booking.room_id == booking_data.room_id,
         Booking.status.in_([
-            BookingStatus.CONFIRMED,
-            BookingStatus.CHECKED_IN,
-            BookingStatus.PENDING,
+            BookingStatus.confirmed,
+            BookingStatus.checked_in,
+            BookingStatus.pending,
         ]),
         and_(
             Booking.check_in_date < booking_data.check_out_date,
@@ -252,7 +252,7 @@ def create_booking(
 
     # Update room status
     if booking.check_in_date == date.today():
-        room.status = RoomStatus.BOOKED
+        room.status = RoomStatus.booked
         db.commit()
 
     booking.guest = db.query(Guest).filter(Guest.id == booking.guest_id).first()
@@ -328,21 +328,21 @@ def check_in(
             detail="Booking not found",
         )
 
-    if booking.status not in [BookingStatus.CONFIRMED, BookingStatus.PENDING]:
+    if booking.status not in [BookingStatus.confirmed, BookingStatus.pending]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Booking cannot be checked in",
         )
 
     # Update booking
-    booking.status = BookingStatus.CHECKED_IN
+    booking.status = BookingStatus.checked_in
     booking.actual_check_in = datetime.now()
     if check_in_data.notes:
         booking.internal_notes = check_in_data.notes
 
     # Update room status
     room = db.query(Room).filter(Room.id == booking.room_id).first()
-    room.status = RoomStatus.CHECKED_IN
+    room.status = RoomStatus.checked_in
 
     # Update guest ID if provided
     if check_in_data.id_type and check_in_data.id_number:
@@ -374,7 +374,7 @@ def check_out(
             detail="Booking not found",
         )
 
-    if booking.status != BookingStatus.CHECKED_IN:
+    if booking.status != BookingStatus.checked_in:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Guest is not checked in",
@@ -390,14 +390,14 @@ def check_out(
         booking.total_amount = Decimal(str(booking.total_amount)) + Decimal(str(additional_total))
 
     # Update booking
-    booking.status = BookingStatus.CHECKED_OUT
+    booking.status = BookingStatus.checked_out
     booking.actual_check_out = datetime.now()
     if check_out_data.notes:
         booking.internal_notes = (booking.internal_notes or "") + f"\nCheckout: {check_out_data.notes}"
 
     # Update room status
     room = db.query(Room).filter(Room.id == booking.room_id).first()
-    room.status = RoomStatus.CLEANING
+    room.status = RoomStatus.cleaning
 
     # Update guest stats
     guest = db.query(Guest).filter(Guest.id == booking.guest_id).first()
@@ -429,20 +429,20 @@ def cancel_booking(
             detail="Booking not found",
         )
 
-    if booking.status in [BookingStatus.CHECKED_OUT, BookingStatus.CANCELLED]:
+    if booking.status in [BookingStatus.checked_out, BookingStatus.cancelled]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Booking cannot be cancelled",
         )
 
-    booking.status = BookingStatus.CANCELLED
+    booking.status = BookingStatus.cancelled
     booking.cancelled_at = datetime.now()
     booking.cancellation_reason = reason
 
     # Update room status if it was booked
     room = db.query(Room).filter(Room.id == booking.room_id).first()
-    if room.status == RoomStatus.BOOKED:
-        room.status = RoomStatus.AVAILABLE
+    if room.status == RoomStatus.booked:
+        room.status = RoomStatus.available
 
     db.commit()
     db.refresh(booking)

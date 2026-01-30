@@ -10,11 +10,11 @@ from .base import BaseModel
 class UserRole(str, enum.Enum):
     """User roles for role-based access control."""
 
-    SUPERADMIN = "superadmin"
-    ADMIN = "admin"
-    MANAGER = "manager"
-    RECEPTIONIST = "receptionist"
-    STAFF = "staff"
+    superadmin = "superadmin"
+    admin = "admin"
+    manager = "manager"
+    receptionist = "receptionist"
+    staff = "staff"
 
 
 class User(BaseModel):
@@ -28,7 +28,7 @@ class User(BaseModel):
     phone = Column(String(20), nullable=True)
 
     role = Column(
-        Enum(UserRole), default=UserRole.STAFF, nullable=False
+        Enum(UserRole), default=UserRole.staff, nullable=False
     )
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)

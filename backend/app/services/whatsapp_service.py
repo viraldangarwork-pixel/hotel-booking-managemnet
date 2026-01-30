@@ -164,7 +164,7 @@ See you soon!
                 wa_id=wa_id,
                 phone_number=wa_id,
                 profile_name=profile_name,
-                status=ChatStatus.ACTIVE,
+                status=ChatStatus.active,
             )
             self.db.add(chat)
             self.db.flush()
@@ -173,7 +173,7 @@ See you soon!
         message = WhatsAppMessage(
             chat_id=chat.id,
             message_id=message_id,
-            direction=MessageDirection.INBOUND,
+            direction=MessageDirection.inbound,
             message_type=message_type,
             content=content,
             media_url=media_url,
@@ -203,10 +203,10 @@ See you soon!
         message = WhatsAppMessage(
             chat_id=chat_id,
             message_id=message_id,
-            direction=MessageDirection.OUTBOUND,
+            direction=MessageDirection.outbound,
             message_type="text",
             content=content,
-            status=MessageStatus.SENT,
+            status=MessageStatus.sent,
             is_bot_message=is_bot,
             sent_by=sent_by,
             sent_at=datetime.now(),
@@ -236,13 +236,13 @@ See you soon!
 
         if message:
             if status == "delivered":
-                message.status = MessageStatus.DELIVERED
+                message.status = MessageStatus.delivered
                 message.delivered_at = timestamp or datetime.now()
             elif status == "read":
-                message.status = MessageStatus.READ
+                message.status = MessageStatus.read
                 message.read_at = timestamp or datetime.now()
             elif status == "failed":
-                message.status = MessageStatus.FAILED
+                message.status = MessageStatus.failed
 
             self.db.commit()
 
@@ -285,7 +285,7 @@ See you soon!
         if not chat:
             raise ValueError("Chat not found")
 
-        chat.status = ChatStatus.RESOLVED
+        chat.status = ChatStatus.resolved
         self.db.commit()
         self.db.refresh(chat)
 
@@ -295,12 +295,12 @@ See you soon!
         """Get all chats with unread messages."""
         return self.db.query(WhatsAppChat).filter(
             WhatsAppChat.unread_count > 0,
-            WhatsAppChat.status == ChatStatus.ACTIVE,
+            WhatsAppChat.status == ChatStatus.active,
         ).order_by(WhatsAppChat.last_message_at.desc()).all()
 
     def get_chats_needing_attention(self) -> List[WhatsAppChat]:
         """Get chats that need human attention."""
         return self.db.query(WhatsAppChat).filter(
             WhatsAppChat.human_takeover_requested == True,
-            WhatsAppChat.status == ChatStatus.ACTIVE,
+            WhatsAppChat.status == ChatStatus.active,
         ).all()

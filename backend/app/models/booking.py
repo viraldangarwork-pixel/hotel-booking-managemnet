@@ -11,25 +11,25 @@ from .base import BaseModel
 class BookingStatus(str, enum.Enum):
     """Booking status enum."""
 
-    INQUIRY = "inquiry"
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    CHECKED_IN = "checked_in"
-    CHECKED_OUT = "checked_out"
-    CANCELLED = "cancelled"
-    NO_SHOW = "no_show"
+    inquiry = "inquiry"
+    pending = "pending"
+    confirmed = "confirmed"
+    checked_in = "checked_in"
+    checked_out = "checked_out"
+    cancelled = "cancelled"
+    no_show = "no_show"
 
 
 class BookingSource(str, enum.Enum):
     """Booking source enum."""
 
-    DIRECT = "direct"
-    WEBSITE = "website"
-    WHATSAPP = "whatsapp"
-    PHONE = "phone"
-    WALK_IN = "walk_in"
-    OTA = "ota"  # Online Travel Agency
-    CORPORATE = "corporate"
+    direct = "direct"
+    website = "website"
+    whatsapp = "whatsapp"
+    phone = "phone"
+    walk_in = "walk_in"
+    ota = "ota"  # Online Travel Agency
+    corporate = "corporate"
 
 
 class Booking(BaseModel):
@@ -57,10 +57,10 @@ class Booking(BaseModel):
 
     # Status and source
     status = Column(
-        Enum(BookingStatus), default=BookingStatus.PENDING, nullable=False
+        Enum(BookingStatus), default=BookingStatus.pending, nullable=False
     )
     source = Column(
-        Enum(BookingSource), default=BookingSource.DIRECT, nullable=False
+        Enum(BookingSource), default=BookingSource.direct, nullable=False
     )
 
     # Pricing
