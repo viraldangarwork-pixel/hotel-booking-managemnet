@@ -2,7 +2,8 @@
 
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from starlette import status as http_status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
@@ -50,13 +51,13 @@ def get_room_type(
     room_type = db.query(RoomType).filter(RoomType.id == room_type_id).first()
     if not room_type:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room type not found",
         )
     return room_type
 
 
-@router.post("/types", response_model=RoomTypeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/types", response_model=RoomTypeResponse, status_code=http_status.HTTP_201_CREATED)
 def create_room_type(
     room_type_data: RoomTypeCreate,
     db: Session = Depends(get_db),
@@ -81,7 +82,7 @@ def update_room_type(
     room_type = db.query(RoomType).filter(RoomType.id == room_type_id).first()
     if not room_type:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room type not found",
         )
 
@@ -94,7 +95,7 @@ def update_room_type(
     return room_type
 
 
-@router.delete("/types/{room_type_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/types/{room_type_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 def delete_room_type(
     room_type_id: int,
     db: Session = Depends(get_db),
@@ -104,7 +105,7 @@ def delete_room_type(
     room_type = db.query(RoomType).filter(RoomType.id == room_type_id).first()
     if not room_type:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room type not found",
         )
 
@@ -209,7 +210,7 @@ def get_room(
     room = db.query(Room).filter(Room.id == room_id).first()
     if not room:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room not found",
         )
 
@@ -217,7 +218,7 @@ def get_room(
     return room
 
 
-@router.post("/", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=RoomResponse, status_code=http_status.HTTP_201_CREATED)
 def create_room(
     room_data: RoomCreate,
     db: Session = Depends(get_db),
@@ -231,7 +232,7 @@ def create_room(
     ).first()
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="Room number already exists",
         )
 
@@ -265,7 +266,7 @@ def update_room(
     room = db.query(Room).filter(Room.id == room_id).first()
     if not room:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room not found",
         )
 
@@ -291,7 +292,7 @@ def update_room_status(
     room = db.query(Room).filter(Room.id == room_id).first()
     if not room:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room not found",
         )
 
@@ -303,7 +304,7 @@ def update_room_status(
     return room
 
 
-@router.delete("/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{room_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 def delete_room(
     room_id: int,
     db: Session = Depends(get_db),
@@ -313,7 +314,7 @@ def delete_room(
     room = db.query(Room).filter(Room.id == room_id).first()
     if not room:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Room not found",
         )
 
